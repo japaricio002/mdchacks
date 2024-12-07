@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, NavLink } from "react-router-dom";
 import Portfolio from "./components/Portfolio";
-
+import Backtest from "./components/Backtest";
 
 import {
   FaTachometerAlt,
@@ -14,7 +14,6 @@ import {
 
 const Dashboard = () => <div className="p-4">Dashboard Content</div>;
 const Strategy = () => <div className="p-4">Strategy Content</div>;
-const Backtest = () => <div className="p-4">Backtest Content</div>;
 const DataManagement = () => <div className="p-4">Data Management Content</div>;
 const Settings = () => <div className="p-4">Settings Content</div>;
 

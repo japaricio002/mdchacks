@@ -1,13 +1,14 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from bollinger_bands_backtest import BollingerBandsBacktest
 import os
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:<secret>@localhost/<db>'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:secretpass@localhost/alpaca_data'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -56,6 +57,36 @@ def get_stock_data():
     ]
     
     return jsonify(result)
+@app.route('/api/backtest', methods=['POST'])
+def backtest():
+    try:
+        data = request.json
+        db_params = {
+            "host": "localhost",
+            "port": 5432,
+            "database": "alpaca_data",
+            "user": "postgres",
+            "password": "secretpass"
+        }
+        
+        backtest = BollingerBandsBacktest(
+            db_params=db_params,
+            symbol=data.get('symbol'),
+            start_date=data.get('start_date'),
+            end_date=data.get('end_date'),
+            window=int(data.get('window', 20)),
+            num_std=float(data.get('num_std', 2.0)),
+            initial_capital=float(data.get('initial_capital', 100000.0))
+        )
+        
+        df, results = backtest.execute_backtest()
+        return jsonify({
+            "success": True,
+            "results": results,
+            "trades": backtest.trades
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(port=4000)
