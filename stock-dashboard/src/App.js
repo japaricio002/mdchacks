@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, NavLink } from "react-router-dom";
+import Portfolio from "./components/Portfolio";
+
+
 import {
   FaTachometerAlt,
   FaCogs,
@@ -12,7 +15,6 @@ import {
 const Dashboard = () => <div className="p-4">Dashboard Content</div>;
 const Strategy = () => <div className="p-4">Strategy Content</div>;
 const Backtest = () => <div className="p-4">Backtest Content</div>;
-const Portfolio = () => <div className="p-4">Portfolio Content</div>;
 const DataManagement = () => <div className="p-4">Data Management Content</div>;
 const Settings = () => <div className="p-4">Settings Content</div>;
 
@@ -41,11 +43,28 @@ const App = () => {
             isCollapsed ? "w-16" : "w-64"
           } bg-gray-800 text-white flex flex-col transition-width duration-300`}
         >
+          {/* Burger Button */}
           <button
             onClick={toggleNavbar}
             className="p-4 focus:outline-none hover:bg-gray-700"
           >
-            {isCollapsed ? ">>" : "<<"}
+            <div className="space-y-1">
+              <div
+                className={`h-1 w-6 bg-white transition-transform duration-300 ${
+                  isCollapsed ? "rotate-45 translate-y-2" : ""
+                }`}
+              ></div>
+              <div
+                className={`h-1 w-6 bg-white transition-opacity duration-300 ${
+                  isCollapsed ? "opacity-0" : ""
+                }`}
+              ></div>
+              <div
+                className={`h-1 w-6 bg-white transition-transform duration-300 ${
+                  isCollapsed ? "-rotate-45 -translate-y-2" : ""
+                }`}
+              ></div>
+            </div>
           </button>
           <ul className="flex-1">
             {navItems.map((item) => (
