@@ -157,6 +157,18 @@ def moving_average_backtest():
         )
         
         df, results = backtest.execute_backtest()
+
+        # Log the results into the database
+        log = BacktestLog(
+            annual_return=results.get('Annual Return (%)', 0),
+            number_of_trades=results.get('Number of Trades', 0),
+            profit_factor=results.get('Profit Factor', 0),
+            sharpe_ratio=results.get('Sharpe Ratio', 0),
+            total_return=results.get('Total Return (%)', 0),
+            win_rate=results.get('Win Rate (%)', 0),
+        )
+        db.session.add(log)
+        db.session.commit()
         return jsonify({
             "success": True,
             "results": results,
@@ -164,6 +176,19 @@ def moving_average_backtest():
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+class AvailableStock(db.Model):
+    __tablename__ = 'available_stock'
+    id = db.Column(db.Integer, primary_key=True)
+    symbol = db.Column(db.String, nullable=False)
+
+@app.route('/api/stocks/symbols', methods=['GET'])
+def get_stock_symbols():
+    symbols = db.session.query(AvailableStock.symbol).distinct().all()
+    symbol_list = [symbol[0] for symbol in symbols]
+    return jsonify(symbol_list)
+
+
 
 if __name__ == '__main__':
     app.run(port=4000)

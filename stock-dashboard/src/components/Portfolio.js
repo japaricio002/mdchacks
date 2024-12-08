@@ -1,73 +1,78 @@
 import React, { useState, useEffect } from "react";
-import { Chart as ChartJS, CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, Legend } from "chart.js";
-import { Line } from "react-chartjs-2";
 import axios from "axios";
 
-// Register required Chart.js components
-ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, Legend);
-
 const App = () => {
-  const [stock, setStock] = useState("AAPL");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [chartData, setChartData] = useState(null);
+  const [symbols, setSymbols] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredSymbols, setFilteredSymbols] = useState([]);
+  const [selectedSymbol, setSelectedSymbol] = useState("");
 
-  const fetchStockData = async () => {
+  // Fetch symbols from the backend
+  const fetchSymbols = async () => {
     try {
-      const response = await axios.get("http://localhost:4000/api/stocks", {
-        params: { symbol: stock, start_date: startDate, end_date: endDate },
-      });
-      const data = response.data;
-      setChartData({
-        labels: data.map((item) => new Date(item.timestamp).toLocaleDateString()),
-        datasets: [
-          {
-            label: "Close Price",
-            data: data.map((item) => item.close_price),
-            borderColor: "rgba(75, 192, 192, 1)",
-            backgroundColor: "rgba(75, 192, 192, 0.2)",
-            fill: false,
-          },
-        ],
-      });
+      const response = await axios.get("http://localhost:4000/api/stocks/symbols");
+      setSymbols(response.data);
     } catch (error) {
-      console.error("Error fetching stock data:", error);
+      console.error("Error fetching stock symbols:", error);
     }
   };
 
   useEffect(() => {
-    if (startDate && endDate) fetchStockData();
-  }, [stock, startDate, endDate]);
+    fetchSymbols();
+  }, []);
+
+  useEffect(() => {
+    if (searchTerm) {
+      setFilteredSymbols(
+        symbols.filter((symbol) =>
+          symbol.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      );
+    } else {
+      setFilteredSymbols([]);
+    }
+  }, [searchTerm, symbols]);
+
+  const handleSymbolClick = (symbol) => {
+    setSelectedSymbol(symbol);
+    setSearchTerm(symbol);
+    setFilteredSymbols([]); // Clear suggestions after selection
+  };
+
+  const handleBlur = () => {
+    // Delay clearing the suggestions to allow click event to register
+    setTimeout(() => setFilteredSymbols([]), 100);
+  };
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold text-center">Stock Data Viewer</h1>
-      <div className="flex justify-center my-4">
-        <select
-          value={stock}
-          onChange={(e) => setStock(e.target.value)}
-          className="p-2 border rounded"
-        >
-          <option value="AAPL">Apple (AAPL)</option>
-        </select>
+      <h1 className="text-2xl font-bold text-center">Search Stock Symbols</h1>
+      <div className="flex flex-col items-center my-4">
         <input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="ml-4 p-2 border rounded"
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onBlur={handleBlur}
+          placeholder="Search for a stock symbol"
+          className="p-2 border rounded w-64"
         />
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          className="ml-4 p-2 border rounded"
-        />
-      </div>
-      <div>
-        {chartData ? (
-          <Line data={chartData} />
-        ) : (
-          <p className="text-center">Select a date range to view the data.</p>
+        {filteredSymbols.length > 0 && (
+          <ul className="border rounded w-64 max-h-48 overflow-y-auto mt-2">
+            {filteredSymbols.map((symbol) => (
+              <li
+                key={symbol}
+                onClick={() => handleSymbolClick(symbol)}
+                className="p-2 cursor-pointer hover:bg-gray-200"
+              >
+                {symbol}
+              </li>
+            ))}
+          </ul>
+        )}
+        {selectedSymbol && (
+          <p className="mt-4 text-center">
+            Selected Symbol: <strong>{selectedSymbol}</strong>
+          </p>
         )}
       </div>
     </div>
