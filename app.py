@@ -2,6 +2,9 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from bollinger_bands_backtest import BollingerBandsBacktest
+from moving_average_crossover import MACrossoverBacktest
+
+
 import os
 
 app = Flask(__name__)
@@ -26,6 +29,17 @@ class TradingInfo(db.Model):
     number_of_trades = db.Column(db.Integer, nullable=False)
     volume = db.Column(db.Float, nullable=False)
     volume_weighted_average_price = db.Column(db.Float, nullable=False)
+
+class BacktestLog(db.Model):
+    __tablename__ = 'backtest_log'
+    id = db.Column(db.Integer, primary_key=True)
+    annual_return = db.Column(db.Numeric(10, 2), nullable=False)
+    number_of_trades = db.Column(db.Integer, nullable=False)
+    profit_factor = db.Column(db.Numeric(10, 2), nullable=False)
+    sharpe_ratio = db.Column(db.Numeric(6, 3), nullable=False)
+    total_return = db.Column(db.Numeric(10, 2), nullable=False)
+    win_rate = db.Column(db.Numeric(5, 2), nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
 @app.route('/api/stocks', methods=['GET'])
 def get_stock_data():
@@ -57,8 +71,8 @@ def get_stock_data():
     ]
     
     return jsonify(result)
-@app.route('/api/backtest', methods=['POST'])
-def backtest():
+@app.route('/api/backtest/bollinger', methods=['POST'])
+def bollinger_backtest():
     try:
         data = request.json
         db_params = {
@@ -76,6 +90,69 @@ def backtest():
             end_date=data.get('end_date'),
             window=int(data.get('window', 20)),
             num_std=float(data.get('num_std', 2.0)),
+            initial_capital=float(data.get('initial_capital', 100000.0))
+        )
+        
+        df, results = backtest.execute_backtest()
+
+        # Log the results into the database
+        log = BacktestLog(
+            annual_return=results.get('Annual Return (%)', 0),
+            number_of_trades=results.get('Number of Trades', 0),
+            profit_factor=results.get('Profit Factor', 0),
+            sharpe_ratio=results.get('Sharpe Ratio', 0),
+            total_return=results.get('Total Return (%)', 0),
+            win_rate=results.get('Win Rate (%)', 0),
+        )
+        db.session.add(log)
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "results": results,
+            "trades": backtest.trades
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/backtest/logs', methods=['GET'])
+def get_backtest_logs():
+    logs = BacktestLog.query.order_by(BacktestLog.created_at.desc()).all()
+    log_list = [
+        {
+            "id": log.id,
+            "annual_return": float(log.annual_return) if log.annual_return is not None else 0.0,
+            "number_of_trades": log.number_of_trades if log.number_of_trades is not None else 0,
+            "profit_factor": float(log.profit_factor) if log.profit_factor is not None else 0.0,
+            "sharpe_ratio": float(log.sharpe_ratio) if log.sharpe_ratio is not None else 0.0,
+            "total_return": float(log.total_return) if log.total_return is not None else 0.0,
+            "win_rate": float(log.win_rate) if log.win_rate is not None else 0.0,
+            "created_at": log.created_at
+        }
+        for log in logs
+    ]
+    return jsonify(log_list)
+
+
+@app.route('/api/backtest/moving_average', methods=['POST'])
+def moving_average_backtest():
+    try:
+        data = request.json
+        db_params = {
+            "host": "localhost",
+            "port": 5432,
+            "database": "alpaca_data",
+            "user": "postgres",
+            "password": "secretpass"
+        }
+        
+        backtest = MACrossoverBacktest(
+            db_params=db_params,
+            symbol=data.get('symbol'),
+            start_date=data.get('start_date'),
+            end_date=data.get('end_date'),
+            fast_window=int(data.get('fast_window', 10)),
+            slow_window=int(data.get('slow_window', 30)),
             initial_capital=float(data.get('initial_capital', 100000.0))
         )
         
