@@ -188,6 +188,70 @@ def get_stock_symbols():
     symbol_list = [symbol[0] for symbol in symbols]
     return jsonify(symbol_list)
 
+class StockPortfolio(db.Model):
+    __tablename__ = 'stock_portfolio'
+    id = db.Column(db.Integer, primary_key=True)
+    symbol = db.Column(db.String, nullable=False)
+
+@app.route('/api/portfolio/add', methods=['POST'])
+def add_to_portfolio():
+    try:
+        data = request.json
+        symbol = data.get('symbol')
+        entry = data.get('entry')
+
+        if not symbol or entry is None:
+            return jsonify({"error": "Invalid data"}), 400
+
+        current_value = entry  # Assume current value is equal to entry on addition
+        profit_loss = 0.0
+        pl_percent = 0.0
+
+        # Insert into the database
+        new_position = CurrentPosition(
+            symbol=symbol,
+            entry=entry,
+            current_value=current_value,
+            profit_loss=profit_loss,
+            pl_percent=pl_percent
+        )
+        db.session.add(new_position)
+        db.session.commit()
+
+        return jsonify({"success": True, "message": "Stock added to portfolio"}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# Define the CurrentPosition model
+class CurrentPosition(db.Model):
+    __tablename__ = 'current_positions'
+    id = db.Column(db.Integer, primary_key=True)
+    symbol = db.Column(db.String(10), nullable=False)
+    entry = db.Column(db.Numeric(12, 2), nullable=False)
+    current_value = db.Column(db.Numeric(12, 2), nullable=False)
+    profit_loss = db.Column(db.Numeric(15, 2), nullable=False)
+    pl_percent = db.Column(db.Numeric(6, 2), nullable=False)
+
+@app.route('/api/portfolio', methods=['GET'])
+def get_portfolio():
+    try:
+        positions = CurrentPosition.query.all()
+        portfolio_data = [
+            {
+                "id": position.id,
+                "symbol": position.symbol,
+                "entry": float(position.entry),
+                "current_value": float(position.current_value),
+                "profit_loss": float(position.profit_loss),
+                "pl_percent": float(position.pl_percent),
+            }
+            for position in positions
+        ]
+        return jsonify(portfolio_data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 
 
 if __name__ == '__main__':
