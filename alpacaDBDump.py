@@ -3,16 +3,16 @@ import psycopg2
 from datetime import datetime, timedelta
 
 # Alpaca API credentials
-API_KEY = "<id>"
-API_SECRET = "<secret>"
+API_KEY = os.getenv('APCA_API_KEY_ID')
+API_SECRET = os.getenv('APCA_API_SECRET_KEY')
 BASE_URL = "https://data.alpaca.markets/v2"
 
 # PostgreSQL connection details
 DB_HOST = "localhost"
 DB_PORT = 5432
-DB_NAME = "<dbname>"
+DB_NAME = "alpaca_data"
 DB_USER = "postgres"
-DB_PASSWORD = "<secret>"
+DB_PASSWORD = "secretpass"
 
 # Function to fetch trading data
 def fetch_trading_data(symbol, start_date, end_date):
