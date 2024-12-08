@@ -85,7 +85,7 @@ const App = () => {
         </nav>
 
         {/* Main Content */}
-        <main className="flex-1 bg-gray-100">
+        <main className="flex-1 bg-gray-100 overflow-y-auto">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/strategy" element={<Strategy />} />
