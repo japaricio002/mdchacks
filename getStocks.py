@@ -2,9 +2,8 @@ import alpaca_trade_api as tradeapi
 import psycopg2
 from psycopg2 import sql
 
-# Alpaca API credentials
-API_KEY = "PKPBLWY3HS8MP0IHS315"
-SECRET_KEY = "R0fcMFccQkH0Ef5gMbueLWV2AOUyPf91jT8exvsB"
+API_KEY = os.getenv('APCA_API_KEY_ID')
+SECRET_KEY = os.getenv('APCA_API_SECRET_KEY')
 BASE_URL = "https://paper-api.alpaca.markets"  # Use this for the paper trading environment
 
 # PostgreSQL credentials
